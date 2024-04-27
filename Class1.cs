@@ -29,9 +29,9 @@ using System.Threading;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
-//using MQTTnet;
-//using MQTTnet.Client;
-//using MQTTnet.Extensions.ManagedClient;
+using MQTTnet;
+using MQTTnet.Client;
+using MQTTnet.Extensions.ManagedClient;
 using System.Net;
 using System.Text.Json;
 
@@ -914,8 +914,8 @@ namespace VSCaptureBISV
 
         public void SaveNumericValueListRows(string datatype)
         {
-            //if (m_dataexportset == 2) ExportNumValListToJSON(datatype);
-            //if (m_dataexportset == 3) ExportNumValListToMQTT(datatype);
+            if (m_dataexportset == 2) ExportNumValListToJSON(datatype);
+            if (m_dataexportset == 3) ExportNumValListToMQTT(datatype);
             if (m_dataexportset != 3)
             {
                 if (m_NumericValList.Count != 0)
@@ -994,6 +994,152 @@ namespace VSCaptureBISV
             }
             // error occured, return false. 
             return false;
+        }
+
+        public void ExportNumValListToJSON(string datatype)
+        {
+            string serializedJSON = JsonSerializer.Serialize(m_NumericValList, new JsonSerializerOptions { IncludeFields = true });
+
+            try
+            {
+                // Open file for reading. 
+                //using (StreamWriter wrStream = new StreamWriter(pathjson, true, Encoding.UTF8))
+                //{
+                // wrStream.Write(serializedJSON);
+                //  wrStream.Close();
+                //}
+
+                Task.Run(() => PostJSONDataToServer(serializedJSON));
+
+            }
+
+            catch (Exception _Exception)
+            {
+                // Error. 
+                Console.WriteLine("Exception caught in process: {0}", _Exception.ToString());
+            }
+        }
+
+        public async Task PostJSONDataToServer(string postData)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+
+                var data = new StringContent(postData, Encoding.UTF8, "application/json");
+
+                var response = await client.PostAsync(m_jsonposturl, data);
+                response.EnsureSuccessStatusCode();
+
+                string result = await response.Content.ReadAsStringAsync();
+
+                Console.WriteLine(result);
+            }
+        }
+
+        public void ExportNumValListToMQTT(string datatype)
+        {
+            string serializedJSON = JsonSerializer.Serialize(m_NumericValList, new JsonSerializerOptions { IncludeFields = true });
+
+            m_NumericValList.RemoveRange(0, m_NumericValList.Count);
+
+            CancellationTokenSource source = new CancellationTokenSource();
+            CancellationToken token = source.Token;
+
+            var mqttClient = new MqttFactory().CreateMqttClient();
+            var logger = new MqttFactory().DefaultLogger;
+            var managedClient = new ManagedMqttClient(mqttClient, logger);
+
+            var topic = m_MQTTtopic + string.Format("/{0}", datatype);
+
+            try
+            {
+                var task = Task.Run(async () =>
+                {
+                    var connected = GetConnectedTask(managedClient);
+                    await ConnectMQTTAsync(managedClient, token, m_MQTTUrl, m_MQTTclientId, m_MQTTuser, m_MQTTpassw);
+                    await connected;
+
+                    //await PublishMQTTAsync(managedClient, token, topic, serializedJSON);
+                    //await managedClient.StopAsync();
+                });
+
+                task.ContinueWith(antecedent => {
+                    if (antecedent.Status == TaskStatus.RanToCompletion)
+                    {
+                        Task.Run(async () =>
+                        {
+                            await PublishMQTTAsync(managedClient, token, topic, serializedJSON);
+                            await managedClient.StopAsync();
+                        });
+                    }
+                });
+
+            }
+
+            catch (Exception _Exception)
+            {
+                Console.WriteLine("Exception caught in process: {0}", _Exception.ToString());
+            }
+
+        }
+
+        Task GetConnectedTask(ManagedMqttClient managedClient)
+        {
+            TaskCompletionSource<bool> connected = new TaskCompletionSource<bool>();
+            managedClient.ConnectedAsync += (MqttClientConnectedEventArgs arg) => {
+
+                connected.SetResult(true);
+                //Console.WriteLine("MQTT Client connected");
+                return Task.CompletedTask;
+            };
+
+            return connected.Task;
+
+        }
+
+        public static async Task ConnectMQTTAsync(ManagedMqttClient mqttClient, CancellationToken token, string mqtturl, string clientId, string mqttuser, string mqttpassw)
+        {
+            bool mqttSecure = true;
+
+            var messageBuilder = new MqttClientOptionsBuilder()
+            .WithClientId(clientId)
+            .WithCredentials(mqttuser, mqttpassw)
+            .WithCleanSession()
+            .WithWebSocketServer((MqttClientWebSocketOptionsBuilder b) =>
+            {
+                b.WithUri(mqtturl);
+            });
+
+            var tlsOptions = new MqttClientTlsOptionsBuilder()
+               .WithSslProtocols(System.Security.Authentication.SslProtocols.Tls12)
+               .Build();
+
+            var options = mqttSecure
+            ? messageBuilder
+            .WithTlsOptions(tlsOptions)
+                .Build()
+            : messageBuilder
+                .Build();
+
+            var managedOptions = new ManagedMqttClientOptionsBuilder()
+              .WithAutoReconnectDelay(TimeSpan.FromSeconds(1))
+              .WithClientOptions(options)
+              .Build();
+
+            await mqttClient.StartAsync(managedOptions);
+
+        }
+
+        public static async Task PublishMQTTAsync(ManagedMqttClient mqttClient, CancellationToken token, string topic, string payload, bool retainFlag = true, int qos = 1)
+        {
+            await mqttClient.EnqueueAsync(topic, payload, (MQTTnet.Protocol.MqttQualityOfServiceLevel)qos, retainFlag);
+            //Console.WriteLine("The managed MQTT client is connected, publishing data.");
+
+            // Wait until the queue is fully processed.
+            SpinWait.SpinUntil(() => mqttClient.PendingApplicationMessagesCount == 0, 5000);
+            //Console.WriteLine($"Pending messages = {mqttClient.PendingApplicationMessagesCount}");
+
         }
 
 

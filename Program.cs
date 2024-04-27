@@ -54,7 +54,7 @@ namespace VSCaptureBISV
             if (parser.Arguments.ContainsKey("help"))
             {
                 Console.WriteLine("VSCaptureBISV.exe -port [portname] -interval [number]");
-                Console.WriteLine(" -export[number] -devid[name] -url [name]");
+                Console.WriteLine(" -export[number] -devid[name] -url [name] -waveset[number] - scale[number]");
                 Console.WriteLine("-port <Set serial port name>");
                 Console.WriteLine("-interval <Set numeric transmission interval>");
                 Console.WriteLine("-export <Set data export CSV, MQTT or JSON option>");
@@ -63,6 +63,8 @@ namespace VSCaptureBISV
                 Console.WriteLine("-topic <Set topic for MQTT export>");
                 Console.WriteLine("-user <Set username for MQTT export>");
                 Console.WriteLine("-passw <Set password for MQTT export>");
+                Console.WriteLine("-waveset <Set waveform export option>");
+                Console.WriteLine("-scale <Set waveform ADC or calibrated export option>");
                 Console.WriteLine();
                 return;
             }
