@@ -3,3 +3,5 @@
 
  
 ![VSCBIS2](https://github.com/xeonfusion/VSCaptureBISV/assets/10882257/24a7d08d-cb38-4427-985c-895afdd4a7db)
+![VSCBIS3](https://github.com/xeonfusion/VSCaptureBISV/assets/10882257/29c9d243-5e8f-40bd-af7b-85e5e0420916)
+
