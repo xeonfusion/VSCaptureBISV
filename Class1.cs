@@ -81,6 +81,7 @@ namespace VSCaptureBISV
         public bool m_calibratewavevalues = false;
         public double m_defaultgain = 0.05;
         public double m_defaultoffset = -3234;
+        public bool m_spectraldataenable = false;
 
         public int m_dataexportset = 1;
         public string m_DeviceID;
@@ -224,13 +225,15 @@ namespace VSCaptureBISV
             {
                 do
                 {
-                   RequestProcessedData();
+                    if (m_spectraldataenable == true) RequestProcessedSpectralData();
+                    else RequestProcessedData();
                    await Task.Delay(nmillisecond);
 
                 }
                 while (true);
             }
-            RequestProcessedData();
+            if (m_spectraldataenable == true) RequestProcessedSpectralData();
+            else RequestProcessedData();
         }
 
         public async Task SendCycledWaveRequests(int nInterval)
@@ -595,7 +598,7 @@ namespace VSCaptureBISV
                     offset = (double)dscscaledata.dsc_offset_num / dscscaledata.dsc_offset_divisor;
                 }
 
-                value = (double) gain*(Waveval + offset);
+                value = (double) gain*(Waveval - offset);
                 value = Math.Round(value, 2);
 
                 return value;
@@ -823,13 +826,24 @@ namespace VSCaptureBISV
         public short TwosComplementToInt16(byte[] bArray)
         {
             //BIS monitor is LittleEndian
-            //short result = BitConverter.ToInt16(new byte[] { bArray[1], bArray[0] }); //msb, lsb
+            short r = BitConverter.ToInt16(new byte[] { bArray[0], bArray[1] }); //lsb, msb
 
-            int lsb = (sbyte) bArray[0];
-            byte msb = bArray[1];
-            short result = (short) (msb | (lsb << 8));
+            int rlsb = (sbyte) bArray[1];
+            byte rmsb = bArray[0];
+            short result = (short) (rmsb | (rlsb << 8));
+            return r;
+        }
 
-            return result;
+        public static int ConvertTwosComplementByteToInteger(short rawValue)
+        {
+            // If a positive value, return it
+            if ((rawValue & 0x8000) == 0)
+            {
+                return rawValue;
+            }
+
+            // Otherwise perform the 2's complement math on the value
+            return (byte)(~(rawValue - 0x01)) * -1;
         }
         public static ushort correctendianshortus(byte[] bArray)
         {

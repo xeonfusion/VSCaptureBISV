@@ -47,6 +47,7 @@ namespace VSCaptureBISV
             string portName;
             string sIntervalset;
             string sWaveformSet;
+            string sSpectralset;
 
             var parser = new CommandLineParser();
             parser.Parse(args);
@@ -132,6 +133,28 @@ namespace VSCaptureBISV
                 int nInterval = 10;
                 if (sIntervalset != "") nIntervalset = Convert.ToInt16(sIntervalset);
                 if (nIntervalset > 0 && nIntervalset < 6) nInterval = setarray[nIntervalset - 1];
+
+                if (parser.Arguments.ContainsKey("spectral"))
+                {
+                    sSpectralset = parser.Arguments["spectral"][0];
+                }
+                else
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("Spectral Data options:");
+                    Console.WriteLine("1. Disabled");
+                    Console.WriteLine("2. Enabled");
+                    Console.WriteLine();
+                    Console.Write("Choose spectral data option (1-2):");
+
+                    sSpectralset = Console.ReadLine();
+                }
+                short nSpectralSet = 1;
+                if (sSpectralset != "") nSpectralSet = Convert.ToInt16(sSpectralset);
+
+                if (nSpectralSet == 1) _serialPort.m_spectraldataenable = false;
+                if (nSpectralSet == 2) _serialPort.m_spectraldataenable = true;
+
 
                 string sDataExportset;
                 if (parser.Arguments.ContainsKey("export"))
