@@ -725,8 +725,11 @@ namespace VSCaptureBISV
                     Array.Copy(raweegdata, i, eegch1, 0, 2);
                     Array.Copy(raweegdata,i+2, eegch2, 0, 2);
                     
-                    short eegch1data = TwosComplementToInt16(eegch1);
-                    short eegch2data = TwosComplementToInt16(eegch2);
+                    //short eegch1data = TwosComplementToInt16(eegch1);
+                    //short eegch2data = TwosComplementToInt16(eegch2);
+
+                    short eegch1data = BitConverter.ToInt16(eegch1,0);
+                    short eegch2data = BitConverter.ToInt16(eegch2,0);
 
                     WaveValResult WaveVal1 = new WaveValResult();
 
@@ -826,25 +829,15 @@ namespace VSCaptureBISV
         public short TwosComplementToInt16(byte[] bArray)
         {
             //BIS monitor is LittleEndian
-            short r = BitConverter.ToInt16(new byte[] { bArray[0], bArray[1] }); //lsb, msb
+            short result = BitConverter.ToInt16(new byte[] { bArray[0], bArray[1] }); //lsb, msb
+            
+            //int resultlsb = (sbyte) bArray[1];
+            //byte resultmsb = bArray[0];
+            //short result2 = (short) ((resultlsb << 8) | resultmsb);
 
-            int rlsb = (sbyte) bArray[1];
-            byte rmsb = bArray[0];
-            short result = (short) (rmsb | (rlsb << 8));
-            return r;
+            return result;
         }
 
-        public static int ConvertTwosComplementByteToInteger(short rawValue)
-        {
-            // If a positive value, return it
-            if ((rawValue & 0x8000) == 0)
-            {
-                return rawValue;
-            }
-
-            // Otherwise perform the 2's complement math on the value
-            return (byte)(~(rawValue - 0x01)) * -1;
-        }
         public static ushort correctendianshortus(byte[] bArray)
         {
             if (BitConverter.IsLittleEndian) Array.Reverse(bArray);
