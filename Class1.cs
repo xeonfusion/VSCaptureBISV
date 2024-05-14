@@ -153,8 +153,8 @@ namespace VSCaptureBISV
             //BPort.DtrEnable = true;
 
             // Set the read/write timeouts
-            BPort.ReadTimeout = 600000;
-            BPort.WriteTimeout = 600000;
+            BPort.ReadTimeout = 2000;
+            BPort.WriteTimeout = 2000;
 
             //ASCII Encoding in C# is only 7bit so
             BPort.Encoding = Encoding.GetEncoding("ISO-8859-1");
@@ -227,7 +227,7 @@ namespace VSCaptureBISV
                 {
                     if (m_spectraldataenable == true) RequestProcessedSpectralData();
                     else RequestProcessedData();
-                   await Task.Delay(nmillisecond);
+                    await Task.Delay(nmillisecond);
 
                 }
                 while (true);
@@ -290,9 +290,9 @@ namespace VSCaptureBISV
                         List<byte[]> segments = new List<byte[]>();
                         byte[] lastsegment = Array.Empty<byte>();
 
-                        if(BufferArray.Length > 0)
+                        if (BufferArray.Length > 0)
                             lastsegment = SplitArrayByDelimiter(BufferArray, segments);
-                        if (lastsegment !=null) 
+                        if (lastsegment != null)
                             m_BufferByteList.AddRange(lastsegment);
 
                         if (segments.Count > 0)
@@ -362,7 +362,7 @@ namespace VSCaptureBISV
                     originalSpan.Slice(startIndex, lastSegment.Length).CopyTo(lastSegment);
 
                 //if (BitConverter.ToInt16(lastSegment) != BitConverter.ToInt16(DataConstants.spi_id))
-                    return lastSegment;
+                return lastSegment;
                 //else return null;
                 // Now 'segments' contains the split frames, and 'lastSegment' contains the remaining bytes
             }
@@ -448,9 +448,9 @@ namespace VSCaptureBISV
                 uint odlen = binreader.ReadUInt16();
                 uint ldpackettype = binreader.ReadUInt16();
 
-                byte[] datapacket = binreader.ReadBytes(packetbuffer.Length-6);
+                byte[] datapacket = binreader.ReadBytes(packetbuffer.Length - 6);
 
-                switch(ldpackettype)
+                switch (ldpackettype)
                 {
                     case DataConstants.L1_DATA_PACKET:
                         ReadDataPacket(datapacket);
@@ -473,8 +473,7 @@ namespace VSCaptureBISV
         {
             if (datapacketbuffer.Length != 0)
             {
-                DateTime dtSystemDateTime = DateTime.Now;
-                m_strTimestamp = dtSystemDateTime.ToString("dd-MM-yyyy HH:mm:ss.fff", CultureInfo.InvariantCulture);
+                m_strTimestamp = DateTime.Now.ToString("dd-MM-yyyy HH:mm:ss.fff", CultureInfo.InvariantCulture);
 
                 MemoryStream memstream = new MemoryStream(datapacketbuffer);
                 BinaryReader binreader = new BinaryReader(memstream);
@@ -484,9 +483,9 @@ namespace VSCaptureBISV
                 uint seqnum = binreader.ReadUInt16();
                 uint messagelen = binreader.ReadUInt16();
 
-                byte[] messagedata = binreader.ReadBytes(datapacketbuffer.Length-12);
+                byte[] messagedata = binreader.ReadBytes(datapacketbuffer.Length - 12);
 
-                switch(messageid)
+                switch (messageid)
                 {
                     case DataConstants.M_PROCESSED_VARS:
                         ReadProcessedEEGData(messagedata);
@@ -509,7 +508,7 @@ namespace VSCaptureBISV
 
         public void ReadProcessedEEGWithSpectralData(byte[] procspectralpacket)
         {
-            if(procspectralpacket.Length != 0)
+            if (procspectralpacket.Length != 0)
             {
                 MemoryStream memstream = new MemoryStream(procspectralpacket);
                 BinaryReader binreader = new BinaryReader(memstream);
@@ -526,7 +525,7 @@ namespace VSCaptureBISV
                 byte[] trend_variables1 = binreader.ReadBytes(24);
                 byte[] trend_variables2 = binreader.ReadBytes(24);
                 byte[] trend_variables3 = binreader.ReadBytes(24);
-                
+
                 ReadEEGVariables(trend_variables3);
 
                 //Spectral EEG data is 244 bytes
@@ -557,16 +556,16 @@ namespace VSCaptureBISV
                 byte[] trend_variables1 = binreader.ReadBytes(trendinfolen);
                 byte[] trend_variables2 = binreader.ReadBytes(trendinfolen);
                 byte[] trend_variables3 = binreader.ReadBytes(trendinfolen);
-    
+
                 ReadEEGVariables(trend_variables3);
-        
+
             }
 
         }
 
         public void ReadDSCInfo(byte[] dscinfopacket)
         {
-            if(dscinfopacket.Length != 0)
+            if (dscinfopacket.Length != 0)
             {
                 MemoryStream memstream = new MemoryStream(dscinfopacket);
                 BinaryReader binreader = new BinaryReader(memstream);
@@ -590,15 +589,15 @@ namespace VSCaptureBISV
                 double gain = m_defaultgain;
                 double offset = m_defaultoffset;
                 double value = 0;
-                
+
                 //Get value from 16 bit ADC values using offset and gain
-                if(dscscaledata != null && dscscaledata.dsc_gain_divisor != 0 && dscscaledata.dsc_offset_divisor != 0)
+                if (dscscaledata != null && dscscaledata.dsc_gain_divisor != 0 && dscscaledata.dsc_offset_divisor != 0)
                 {
                     gain = (double)dscscaledata.dsc_gain_num / dscscaledata.dsc_gain_divisor;
                     offset = (double)dscscaledata.dsc_offset_num / dscscaledata.dsc_offset_divisor;
                 }
 
-                value = (double) gain*(Waveval - offset);
+                value = (double)gain * (Waveval - offset);
                 value = Math.Round(value, 2);
 
                 return value;
@@ -675,7 +674,7 @@ namespace VSCaptureBISV
 
             m_NumericValList.Add(NumVal);
             m_NumValHeaders.Add(NumVal.PhysioID);
-            
+
             return valuestr;
         }
 
@@ -723,23 +722,23 @@ namespace VSCaptureBISV
                 for (int i = 0; i < raweegdatalen; i = i + 4)
                 {
                     Array.Copy(raweegdata, i, eegch1, 0, 2);
-                    Array.Copy(raweegdata,i+2, eegch2, 0, 2);
-                    
+                    Array.Copy(raweegdata, i + 2, eegch2, 0, 2);
+
                     //short eegch1data = TwosComplementToInt16(eegch1);
                     //short eegch2data = TwosComplementToInt16(eegch2);
 
-                    short eegch1data = BitConverter.ToInt16(eegch1,0);
-                    short eegch2data = BitConverter.ToInt16(eegch2,0);
+                    short eegch1data = BitConverter.ToInt16(eegch1, 0);
+                    short eegch2data = BitConverter.ToInt16(eegch2, 0);
 
                     WaveValResult WaveVal1 = new WaveValResult();
 
                     WaveVal1.Relativetimecounter = m_RealtiveTimeCounter;
                     WaveVal1.Relativetimestamp = m_RealtiveTimeCounter.ToString(CultureInfo.InvariantCulture);
-                    
+
                     WaveVal1.Timestamp = m_strTimestamp;
                     WaveVal1.PhysioID = "EEG1";
-                    
-                    if(m_calibratewavevalues == true)
+
+                    if (m_calibratewavevalues == true)
                     {
                         //Scale and Range Value in ADC
                         double eegch1val = ScaleADCValue(eegch1data);
@@ -786,7 +785,7 @@ namespace VSCaptureBISV
             {
                 foreach (WaveValResult WavValResult in m_WaveValResultList)
                 {
-                    if(WavValResult.PhysioID == "EEG1")
+                    if (WavValResult.PhysioID == "EEG1")
                     {
                         m_strbuildwavevalues.Append(WavValResult.Timestamp);
                         m_strbuildwavevalues.Append(',');
@@ -830,7 +829,7 @@ namespace VSCaptureBISV
         {
             //BIS monitor is LittleEndian
             short result = BitConverter.ToInt16(new byte[] { bArray[0], bArray[1] }); //lsb, msb
-            
+
             //int resultlsb = (sbyte) bArray[1];
             //byte resultmsb = bArray[0];
             //short result2 = (short) ((resultlsb << 8) | resultmsb);
@@ -923,7 +922,8 @@ namespace VSCaptureBISV
         {
             if (m_dataexportset == 2) ExportNumValListToJSON(datatype);
             if (m_dataexportset == 3) ExportNumValListToMQTT(datatype);
-            if (m_dataexportset != 3)
+            if (m_dataexportset == 4) ExportNumValListToJSONFile(datatype);
+            if (m_dataexportset != 3 && m_dataexportset != 4)
             {
                 if (m_NumericValList.Count != 0)
                 {
@@ -960,13 +960,14 @@ namespace VSCaptureBISV
             try
             {
                 // Open file for reading. 
-                StreamWriter wrStream = new StreamWriter(_FileName, true, Encoding.UTF8);
+                using (StreamWriter wrStream = new StreamWriter(_FileName, true, Encoding.UTF8))
+                {
+                    wrStream.Write(strbuildNumVal);
+                    strbuildNumVal.Clear();
 
-                wrStream.Write(strbuildNumVal);
-                strbuildNumVal.Clear();
-
-                // close file stream. 
-                wrStream.Close();
+                    // close file stream. 
+                    wrStream.Close();
+                }
 
             }
 
@@ -1027,6 +1028,34 @@ namespace VSCaptureBISV
             }
         }
 
+        public void ExportNumValListToJSONFile(string datatype)
+        {
+            string serializedJSON = JsonSerializer.Serialize(m_NumericValList, new JsonSerializerOptions { IncludeFields = true });
+
+            m_NumericValList.RemoveRange(0, m_NumericValList.Count);
+
+            string filename = String.Format("DataExportVSC.json");
+
+            string pathjson = Path.Combine(Directory.GetCurrentDirectory(), filename);
+
+            try
+            {
+                // Open file for reading. 
+                using (StreamWriter wrStream = new StreamWriter(pathjson, true, Encoding.UTF8))
+                {
+                    wrStream.Write(serializedJSON);
+
+                    wrStream.Close();
+                }
+            }
+
+            catch (Exception _Exception)
+            {
+                // Error. 
+                Console.WriteLine("Exception caught in process: {0}", _Exception.ToString());
+            }
+        }
+
         public async Task PostJSONDataToServer(string postData)
         {
             using (HttpClient client = new HttpClient())
@@ -1071,7 +1100,8 @@ namespace VSCaptureBISV
                     //await managedClient.StopAsync();
                 });
 
-                task.ContinueWith(antecedent => {
+                task.ContinueWith(antecedent =>
+                {
                     if (antecedent.Status == TaskStatus.RanToCompletion)
                     {
                         Task.Run(async () =>
@@ -1094,7 +1124,8 @@ namespace VSCaptureBISV
         Task GetConnectedTask(ManagedMqttClient managedClient)
         {
             TaskCompletionSource<bool> connected = new TaskCompletionSource<bool>();
-            managedClient.ConnectedAsync += (MqttClientConnectedEventArgs arg) => {
+            managedClient.ConnectedAsync += (MqttClientConnectedEventArgs arg) =>
+            {
 
                 connected.SetResult(true);
                 //Console.WriteLine("MQTT Client connected");
