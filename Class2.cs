@@ -1,5 +1,5 @@
 ﻿/*
- * This file is part of VitalSignsCaptureBISV v1.001.
+ * This file is part of VitalSignsCaptureBISV v1.003.
  * Copyright (C) 2024 John George K., xeonfusion@users.sourceforge.net
 
     VitalSignsCaptureBISV is free software: you can redistribute it and/or modify
@@ -115,11 +115,38 @@ namespace VSCaptureBISV
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 244, CharSet = CharSet.Ansi)]
     public class spectra_msg
     {
-        public short spect_numofchan;
-        public short spect_size;
+        public ushort spect_numofchan;
+        public ushort spect_size;
         //public short power_spectrum[SPECTRA_NUMOFCHAN][SIZE_OF_HOST_POWER_SPECTRUM];
         public short[] power_spectrum1 = new short[60];
         public short[] power_spectrum2 = new short[60];
+    };
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 532, CharSet = CharSet.Ansi)]
+    public class processed_vars_and_spectra_msg_4b
+    {
+        public processed_vars_msg_4b processed_vars = new processed_vars_msg_4b();        public spectra_msg spectra = new spectra_msg();    };
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 288, CharSet = CharSet.Ansi)]
+    public class processed_vars_msg_4b
+    {
+        public dsc_bilateral_info_struct proc_dsc_info = new dsc_bilateral_info_struct();
+        public impedance_info_struct impedance_info1 = new impedance_info_struct();
+        public impedance_info_struct impedance_info2 = new impedance_info_struct();
+        public impedance_info_struct impedance_info3 = new impedance_info_struct();
+        public impedance_info_struct impedance_info4 = new impedance_info_struct();
+        public uint host_filt_setting;
+        public uint host_smoothing_setting;
+        public uint host_spectral_art_mask;
+        public uint host_bispectral_art_mask;
+        public be_bilateral_trend_variables_info trend_variables1 = new be_bilateral_trend_variables_info(); //channel 1
+        public be_bilateral_trend_variables_info trend_variables2 = new be_bilateral_trend_variables_info(); //channel 2
+        public be_bilateral_trend_variables_info trend_variables3 = new be_bilateral_trend_variables_info(); //channel 3
+        public be_bilateral_trend_variables_info trend_variables4 = new be_bilateral_trend_variables_info(); //channel 4
+        public short sqi_left_index;
+        public short sqi_right_index;
+        public short bis_left_index;
+        public short bis_right_index;
     };
 
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 72, CharSet = CharSet.Ansi)]

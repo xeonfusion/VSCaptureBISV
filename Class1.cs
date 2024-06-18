@@ -1,5 +1,5 @@
 ﻿/*
- * This file is part of VitalSignsCaptureBISV v1.001.
+ * This file is part of VitalSignsCaptureBISV v1.003.
  * Copyright (C) 2024 John George K., xeonfusion@users.sourceforge.net
 
     VitalSignsCaptureBISV is free software: you can redistribute it and/or modify
@@ -153,8 +153,8 @@ namespace VSCaptureBISV
             //BPort.DtrEnable = true;
 
             // Set the read/write timeouts
-            BPort.ReadTimeout = 2000;
-            BPort.WriteTimeout = 2000;
+            BPort.ReadTimeout = 600000;
+            BPort.WriteTimeout = 600000;
 
             //ASCII Encoding in C# is only 7bit so
             BPort.Encoding = Encoding.GetEncoding("ISO-8859-1");
@@ -508,6 +508,7 @@ namespace VSCaptureBISV
 
         public void ReadProcessedEEGWithSpectralData(byte[] procspectralpacket)
         {
+            int packetlen = procspectralpacket.Length;
             if (procspectralpacket.Length != 0)
             {
                 MemoryStream memstream = new MemoryStream(procspectralpacket);
@@ -522,14 +523,71 @@ namespace VSCaptureBISV
                 byte[] smoothing = binreader.ReadBytes(4);
                 byte[] mask = binreader.ReadBytes(8);
 
-                byte[] trend_variables1 = binreader.ReadBytes(24);
-                byte[] trend_variables2 = binreader.ReadBytes(24);
-                byte[] trend_variables3 = binreader.ReadBytes(24);
+                int trendinfolen = 24;
+                bool extrainfo = false;
+                if (packetlen == 400)
+                {
+                    trendinfolen = 36; //extra info with spectral type packet is 400 bytes
+                    extrainfo = true;
+                }
 
-                ReadEEGVariables(trend_variables3);
+                byte[] trend_variables1 = binreader.ReadBytes(trendinfolen);
+                byte[] trend_variables2 = binreader.ReadBytes(trendinfolen);
+                byte[] trend_variables3 = binreader.ReadBytes(trendinfolen);
+
+                ReadEEGVariables(trend_variables1, extrainfo);
 
                 //Spectral EEG data is 244 bytes
                 byte[] spectral_info = binreader.ReadBytes(244);
+
+                ReadSpectralData(spectral_info);
+            }
+        }
+
+        public void ReadSpectralData(byte[] spectraldatabuffer)
+        {
+            // SIZE_OF_HOST_POWER_SPECTRUM is 60
+            // 60 values for 0.5 hz - 30.0 hz, Number of spectra per message is 2
+            // SIZE_M_SPECTRA ((SIZE_OF_HOST_POWER_SPECTRUM + 1)*4)
+
+            if (spectraldatabuffer.Length != 0)
+            {
+                MemoryStream memstream = new MemoryStream(spectraldatabuffer);
+                BinaryReader binreader = new BinaryReader(memstream);
+
+                int nchannels = binreader.ReadUInt16();
+                int nspectsize = binreader.ReadUInt16();
+
+                int rawspectdatalen = (spectraldatabuffer.Length - 4);
+                byte[] rawspectdatach1 = binreader.ReadBytes(rawspectdatalen / 2); //120 bytes
+                byte[] rawspectdatach2 = binreader.ReadBytes(rawspectdatalen / 2); //120 bytes
+                
+                ReadChannelSpectralData(rawspectdatach1, "Ch1");
+                ReadChannelSpectralData(rawspectdatach1, "Ch2");
+      
+            }
+        }
+
+        public void ReadChannelSpectralData(byte[] channelspectralbuffer, string channel)
+        {
+            MemoryStream memstream = new MemoryStream(channelspectralbuffer);
+            BinaryReader binreader = new BinaryReader(memstream);
+
+            for (int i = 0; i < (DataConstants.SIZE_OF_HOST_POWER_SPECTRUM); i++) //60 values
+            {
+                byte[] bvalue = binreader.ReadBytes(2);
+
+                short spectvalue = BitConverter.ToInt16(bvalue, 0);
+
+                //double spectscaledvalue = ScaleADCValue(spectvalue);
+                double spectscaledvalue = (double)Math.Sqrt(spectvalue);
+                //double spectval = spectscaledvalue * ((i + 1) * 0.5);
+                //spectval = Math.Pow(spectscaledvalue, 2);
+                //double spectscaledvalue1 = spectval / (128 * 60);
+                //double spectscaledvalue2 = (double) 10*(Math.Log10(spectval));
+
+                string ChPowerx = string.Format(channel + "Power{0}Hz", (i + 1)*0.5);
+                string strChPowerValue = ValidateAddData(ChPowerx, spectscaledvalue, 1, false, "{0:0.00}");
             }
         }
 
@@ -551,13 +609,18 @@ namespace VSCaptureBISV
                 byte[] mask = binreader.ReadBytes(8);
 
                 int trendinfolen = 24;
-                if (packetlen == 156) trendinfolen = 36; //extra info type packet is 156 bytes
+                bool extrainfo = false;
+                if (packetlen == 156)
+                {
+                    trendinfolen = 36; //extra info type packet is 156 bytes
+                    extrainfo = true;
+                }
 
                 byte[] trend_variables1 = binreader.ReadBytes(trendinfolen);
                 byte[] trend_variables2 = binreader.ReadBytes(trendinfolen);
                 byte[] trend_variables3 = binreader.ReadBytes(trendinfolen);
 
-                ReadEEGVariables(trend_variables3);
+                ReadEEGVariables(trend_variables1, extrainfo);
 
             }
 
@@ -605,7 +668,7 @@ namespace VSCaptureBISV
             else return Waveval;
         }
 
-        public void ReadEEGVariables(byte[] eegvariablespacket)
+        public void ReadEEGVariables(byte[] eegvariablespacket, bool extrainfo)
         {
             int packetlen = eegvariablespacket.Length;
 
@@ -632,7 +695,8 @@ namespace VSCaptureBISV
             string EMG_LOW = ValidateAddData("EMG_LOW", sEMG_LOW, 0.01, false, "{0:0.00}");
             string SQI = ValidateAddData("SQI", iSQI, 0.1, false, "{0:0.0}");
 
-            if (packetlen == 36)
+            //if (packetlen == 36)
+            if(extrainfo == true)
             {
                 short burst_per_min = binreader.ReadInt16();
                 short rfu1 = binreader.ReadInt16();
