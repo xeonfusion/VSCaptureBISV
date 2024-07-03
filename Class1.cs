@@ -577,14 +577,10 @@ namespace VSCaptureBISV
             {
                 byte[] bvalue = binreader.ReadBytes(2);
 
-                short spectvalue = BitConverter.ToInt16(bvalue, 0);
+                short spectvalue = BitConverter.ToInt16(bvalue, 0); //unit is db*100
 
-                //double spectscaledvalue = ScaleADCValue(spectvalue);
-                double spectscaledvalue = (double)Math.Sqrt(spectvalue);
-                //double spectval = spectscaledvalue * ((i + 1) * 0.5);
-                //spectval = Math.Pow(spectscaledvalue, 2);
-                //double spectscaledvalue1 = spectval / (128 * 60);
-                //double spectscaledvalue2 = (double) 10*(Math.Log10(spectval));
+                double spectscaledvalue = spectvalue * 0.01; 
+                //double spectscaledvalue2 = (double) 10*(Math.Log10(spectscaledvalue));
 
                 string ChPowerx = string.Format(channel + "Power{0}Hz", (i + 1)*0.5);
                 string strChPowerValue = ValidateAddData(ChPowerx, spectscaledvalue, 1, false, "{0:0.00}");
