@@ -310,7 +310,7 @@ namespace VSCaptureBISV
 
                 }
 
-                short nWavescaleSet = 1;
+                short nWavescaleSet = 2;
                 if (sWavescaleSet != "") nWavescaleSet = Convert.ToInt16(sWavescaleSet);
 
                 if (nWavescaleSet == 1) _serialPort.m_calibratewavevalues = false;

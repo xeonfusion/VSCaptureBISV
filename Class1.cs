@@ -78,7 +78,7 @@ namespace VSCaptureBISV
         public double m_RealtiveTimeCounter = 0;
 
         public dsc_info_struct m_Dsc_Info_Struct = new dsc_info_struct();
-        public bool m_calibratewavevalues = false;
+        public bool m_calibratewavevalues = true;
         public double m_defaultgain = 0.05;
         public double m_defaultoffset = -3234;
         public bool m_spectraldataenable = false;
