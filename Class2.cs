@@ -1,5 +1,5 @@
 ﻿/*
- * This file is part of VitalSignsCaptureBISV v1.003.
+ * This file is part of VitalSignsCaptureBISV v1.004.
  * Copyright (C) 2024 John George K., xeonfusion@users.sourceforge.net
 
     VitalSignsCaptureBISV is free software: you can redistribute it and/or modify

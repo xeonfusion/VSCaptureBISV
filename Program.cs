@@ -1,5 +1,5 @@
 ﻿/*
- * This file is part of VitalSignsCaptureBISV v1.003.
+ * This file is part of VitalSignsCaptureBISV v1.004.
  * Copyright (C) 2024 John George K., xeonfusion@users.sourceforge.net
 
     VitalSignsCaptureBISV is free software: you can redistribute it and/or modify
@@ -38,7 +38,7 @@ namespace VSCaptureBISV
 
         public static void Main(string[] args)
         {
-            Console.WriteLine("VitalSignsCaptureBISV v1.003 (C)2024 John George K.");
+            Console.WriteLine("VitalSignsCaptureBISV v1.004 (C)2024 John George K.");
             Console.WriteLine("For command line usage: -help");
             Console.WriteLine();
 
